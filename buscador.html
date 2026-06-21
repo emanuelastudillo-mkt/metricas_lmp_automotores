@@ -208,7 +208,7 @@
     </section>
 
     <footer>
-      <span>Dashboard de stock · LMP Autos · Datos tomados de la hoja publicada</span>
+      <span>Dashboard de stock · LMP Autos · Datos tomados de la hoja publicada · <strong id="buildVersion">v6</strong></span>
       <div class="footer-tools">
         <button class="gallery-config-btn" id="galleryConfigBtn" type="button">Configurar fotos</button>
         <label class="sold-toggle" title="Mostrar vehículos vendidos">
@@ -246,8 +246,9 @@
   const SHEET_HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR97O_aQlCskpibTlj1UEomToyCeUl8seOUB3DoNihqoXAAfGbO-8DtUj_WG9XZJvYRWJ_PdGcEBKcH/pubhtml?gid=0&single=true';
   // También puede pegarse desde “Configurar fotos” al pie del dashboard.
   const DEFAULT_DRIVE_GALLERY_API_URL = 'https://script.google.com/macros/s/AKfycbyEQXz7_oQuy6EqJ-ybbnmanl0kKpGeKMfXSedTKVRUOdgYF7smvmcKHDl9WF89NBtQ/exec';
+  const BUILD_VERSION = 'v6-2026-06-21';
   const GALLERY_API_STORAGE_KEY = 'lmp-drive-gallery-api-v2';
-  const CACHE_KEY = 'lmp-stock-cache-v4';
+  const CACHE_KEY = 'lmp-stock-cache-v6';
   const CACHE_MAX_AGE = 1000 * 60 * 60 * 12;
   const FETCH_TIMEOUT = 12000;
 
@@ -333,12 +334,7 @@
       if (!invalidRaw) { invalidRaw = clean(value); sourceHeader = header; }
     }
 
-    // Respaldo: reconoce una carpeta aunque la columna tenga otro nombre.
-    for (const [header,value] of Object.entries(row)) {
-      const candidate = unwrapPossibleUrl(value);
-      if (candidate && extractDriveFolderInfo(candidate)) return { url:candidate, raw:clean(value), header };
-    }
-
+    // Por seguridad, no toma enlaces de otras columnas: solo la columna de fotos.
     return { url:'', raw:invalidRaw, header:sourceHeader };
   }
 
@@ -388,16 +384,9 @@
     const keys = [];
 
     if (id) keys.push(`id:${id}`);
-    if (brand && model && year && km) keys.push(`bmYK:${brand}|${model}|${year}|${km}`);
-    if (brand && model && year) keys.push(`bmY:${brand}|${model}|${year}`);
-    if (brand && model) keys.push(`bm:${brand}|${model}`);
+    if (brand && model && year && km) keys.push(`bmyk:${brand}|${model}|${year}|${km}`);
+    if (brand && model && year) keys.push(`bmy:${brand}|${model}|${year}`);
 
-    const generic = Object.entries(row)
-      .filter(([header,value]) => !isPhotoHeader(header) && clean(value))
-      .slice(0,12)
-      .map(([header,value]) => `${normalize(header)}=${normalize(value)}`)
-      .join('|');
-    if (generic) keys.push(`row:${generic}`);
     return [...new Set(keys.filter(Boolean))];
   }
 
@@ -428,9 +417,15 @@
           if (!photoCell) continue;
 
           const anchor = photoCell.querySelector('a[href]');
-          const rawHref = anchor?.getAttribute('href') || photoCell.getAttribute('data-href') || '';
-          const href = unwrapPublishedHref(rawHref);
-          if (!href || !extractDriveFolderInfo(href)) continue;
+          const candidates = [
+            anchor?.getAttribute('href') || '',
+            photoCell.getAttribute('data-href') || '',
+            clean(photoCell.textContent || '')
+          ];
+          const href = candidates
+            .map(unwrapPublishedHref)
+            .find(value => value && extractDriveFolderInfo(value)) || '';
+          if (!href) continue;
 
           const row = Object.fromEntries(htmlHeaders.map((header,i)=>[header, clean(cells[i]?.textContent || '')]));
           rowIdentityKeys(row).forEach(key=>addUniquePhotoLink(result.byIdentity,key,href));
@@ -805,7 +800,7 @@
       renderGallery();
     } catch (error) {
       if (activeVehicle !== v) return;
-      els.galleryHost.innerHTML = `<div class="gallery-state"><strong>No se pudo cargar el carrusel</strong><p>${escapeHTML(error.message || 'Error desconocido.')}</p><a class="secondary-btn" href="${escapeHTML(folder.url)}" target="_blank" rel="noopener noreferrer">Abrir carpeta</a></div>`;
+      els.galleryHost.innerHTML = `<div class="gallery-state"><strong>No se pudo cargar el carrusel</strong><p>${escapeHTML(error.message || 'Error desconocido.')}</p><p><small>ID consultado: ${escapeHTML(folder.id)} · versión ${escapeHTML(BUILD_VERSION)}</small></p><a class="secondary-btn" href="${escapeHTML(folder.url)}" target="_blank" rel="noopener noreferrer">Abrir carpeta</a></div>`;
       console.error(error);
     }
   }
@@ -927,6 +922,12 @@
   });
   els.copyReply.addEventListener('click',()=>activeVehicle&&copyText(buildReply(activeVehicle),'Respuesta copiada'));
   els.copyDetails.addEventListener('click',()=>activeVehicle&&copyText(buildFullDetails(activeVehicle),'Ficha copiada'));
+
+  const buildNode = document.getElementById('buildVersion');
+  if (buildNode) buildNode.textContent = BUILD_VERSION;
+  try {
+    ['lmp-stock-cache-v3','lmp-stock-cache-v4','lmp-stock-cache-v5'].forEach(key => localStorage.removeItem(key));
+  } catch {}
 
   loadData();
 })();
