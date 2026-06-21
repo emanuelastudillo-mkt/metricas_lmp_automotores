@@ -245,9 +245,9 @@
   const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR97O_aQlCskpibTlj1UEomToyCeUl8seOUB3DoNihqoXAAfGbO-8DtUj_WG9XZJvYRWJ_PdGcEBKcH/pub?gid=0&single=true&output=csv';
   const SHEET_HTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR97O_aQlCskpibTlj1UEomToyCeUl8seOUB3DoNihqoXAAfGbO-8DtUj_WG9XZJvYRWJ_PdGcEBKcH/pubhtml?gid=0&single=true';
   // También puede pegarse desde “Configurar fotos” al pie del dashboard.
-  const DEFAULT_DRIVE_GALLERY_API_URL = 'PEGAR_URL_APPS_SCRIPT_AQUI';
+  const DEFAULT_DRIVE_GALLERY_API_URL = 'https://script.google.com/macros/s/AKfycbyEQXz7_oQuy6EqJ-ybbnmanl0kKpGeKMfXSedTKVRUOdgYF7smvmcKHDl9WF89NBtQ/exec';
   const GALLERY_API_STORAGE_KEY = 'lmp-drive-gallery-api-v2';
-  const CACHE_KEY = 'lmp-stock-cache-v3';
+  const CACHE_KEY = 'lmp-stock-cache-v4';
   const CACHE_MAX_AGE = 1000 * 60 * 60 * 12;
   const FETCH_TIMEOUT = 12000;
 
@@ -379,44 +379,77 @@
     } catch { return clean(value); }
   }
 
+  function rowIdentityKeys(row={}) {
+    const id = normalize(findValue(row,'id'));
+    const brand = normalize(findValue(row,'brand'));
+    const model = normalize(findValue(row,'model'));
+    const year = normalize(findValue(row,'year'));
+    const km = normalize(findValue(row,'km')).replace(/\s+/g,'');
+    const keys = [];
+
+    if (id) keys.push(`id:${id}`);
+    if (brand && model && year && km) keys.push(`bmYK:${brand}|${model}|${year}|${km}`);
+    if (brand && model && year) keys.push(`bmY:${brand}|${model}|${year}`);
+    if (brand && model) keys.push(`bm:${brand}|${model}`);
+
+    const generic = Object.entries(row)
+      .filter(([header,value]) => !isPhotoHeader(header) && clean(value))
+      .slice(0,12)
+      .map(([header,value]) => `${normalize(header)}=${normalize(value)}`)
+      .join('|');
+    if (generic) keys.push(`row:${generic}`);
+    return [...new Set(keys.filter(Boolean))];
+  }
+
+  function addUniquePhotoLink(map,key,url) {
+    if (!key || !url) return;
+    if (!(key in map)) map[key] = url;
+    else if (map[key] !== url) map[key] = null;
+  }
+
   function parsePublishedPhotoLinks(html='') {
-    const links = {};
-    if (!html || typeof DOMParser === 'undefined') return links;
+    const result = { byIdentity:{} };
+    if (!html || typeof DOMParser === 'undefined') return result;
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const tables = [...doc.querySelectorAll('table')].sort((a,b)=>b.querySelectorAll('tr').length-a.querySelectorAll('tr').length);
 
     for (const table of tables) {
-      const rows = [...table.querySelectorAll('tr')];
-      for (let headerIndex=0; headerIndex<rows.length; headerIndex++) {
-        const headerCells = [...rows[headerIndex].querySelectorAll('th,td')];
-        const photoColumn = headerCells.findIndex(cell => isPhotoHeader(cell.textContent));
+      const tableRows = [...table.querySelectorAll('tr')];
+      for (let headerIndex=0; headerIndex<tableRows.length; headerIndex++) {
+        const headerCells = [...tableRows[headerIndex].querySelectorAll('th,td')];
+        const htmlHeaders = headerCells.map((cell,i)=>clean(cell.textContent) || `Columna ${i+1}`);
+        const photoColumn = htmlHeaders.findIndex(isPhotoHeader);
         if (photoColumn < 0) continue;
 
-        let dataIndex = 0;
-        for (let r=headerIndex+1; r<rows.length; r++) {
-          const cells = [...rows[r].querySelectorAll('th,td')];
+        for (let r=headerIndex+1; r<tableRows.length; r++) {
+          const cells = [...tableRows[r].querySelectorAll('th,td')];
           if (!cells.some(cell => clean(cell.textContent))) continue;
           const photoCell = cells[photoColumn];
-          if (photoCell) {
-            const anchor = photoCell.querySelector('a[href]');
-            const rawHref = anchor?.getAttribute('href') || photoCell.getAttribute('data-href') || '';
-            const href = unwrapPublishedHref(rawHref);
-            if (href && extractDriveFolderInfo(href)) links[dataIndex] = href;
-          }
-          dataIndex++;
+          if (!photoCell) continue;
+
+          const anchor = photoCell.querySelector('a[href]');
+          const rawHref = anchor?.getAttribute('href') || photoCell.getAttribute('data-href') || '';
+          const href = unwrapPublishedHref(rawHref);
+          if (!href || !extractDriveFolderInfo(href)) continue;
+
+          const row = Object.fromEntries(htmlHeaders.map((header,i)=>[header, clean(cells[i]?.textContent || '')]));
+          rowIdentityKeys(row).forEach(key=>addUniquePhotoLink(result.byIdentity,key,href));
         }
-        return links;
+        return result;
       }
     }
-    return links;
+    return result;
   }
 
   function mergePublishedPhotoLinks(rows, photoLinks={}) {
     const preferredHeader = headers.find(isPhotoHeader) || 'Carpeta de fotos';
-    Object.entries(photoLinks || {}).forEach(([index,url]) => {
-      const row = rows[Number(index)];
-      if (!row || !url || findPhotoFolderData(row).url) return;
-      row[preferredHeader] = url;
+    const byIdentity = photoLinks?.byIdentity || {};
+
+    rows.forEach(row => {
+      // Si la URL está escrita como texto en el CSV, siempre tiene prioridad.
+      if (findPhotoFolderData(row).url) return;
+      const url = rowIdentityKeys(row).map(key=>byIdentity[key]).find(Boolean);
+      if (url) row[preferredHeader] = url;
     });
     return rows;
   }
@@ -840,6 +873,7 @@
     setStatus('idle', force ? 'Actualizando…' : 'Conectando…');
     if (force) {
       try { localStorage.removeItem(CACHE_KEY); } catch {}
+      galleryCache.clear();
     }
     const cache = readCache();
     if (!force && cache?.text) {
