@@ -253,7 +253,11 @@ function km(v){
   return new Intl.NumberFormat('es-AR').format(real)+' km';
 }
 function mapVehicle(r){
-  const id=clean(r.ID || r[' '] || r['']);
+  const firstValue=Object.values(r)[0];
+  const rawId=clean(r.ID || r[' '] || r[''] || r.A || firstValue);
+  const fallbackId=[r.Marca,r.Modelo,r['Año']].map(clean).filter(Boolean).join('-')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,'-').replace(/^-|-$/g,'').toUpperCase();
+  const id=rawId || fallbackId;
   return {
     id, marca:clean(r.Marca), modelo:clean(r.Modelo), anio:clean(r['Año']),
     kilometraje:clean(r.Kilometraje), color:clean(r.Color),
@@ -267,7 +271,7 @@ function mapVehicle(r){
   };
 }
 function validVehicle(v){
-  return /^A\d+/i.test(v.id) && v.marca && v.modelo && v.estado && v.estado!=='VENDIDO';
+  return Boolean(v.id && v.marca && v.modelo && v.estado && v.estado!=='VENDIDO');
 }
 function card(v){
   const img=v.fotos[0];
@@ -464,7 +468,7 @@ async function loadData(){
     vehicles=result.rows.map(mapVehicle).filter(validVehicle);
     if(!vehicles.length){
       const states=[...new Set(result.rows.map(r=>clean(r['Estado actual del auto'])).filter(Boolean))];
-      throw new Error(`La hoja cargó ${result.rows.length} filas, pero ninguna pasó el filtro. Estados detectados: ${states.join(', ') || 'ninguno'}`);
+      throw new Error(`La hoja cargó ${result.rows.length} filas, pero ninguna pudo convertirse en vehículo. Estados detectados: ${states.join(', ') || 'ninguno'}`);
     }
     vehicles.sort((a,b)=>(a.estado==='DISPONIBLE'?0:1)-(b.estado==='DISPONIBLE'?0:1) || Number(b.anio)-Number(a.anio));
     populateFilters();
