@@ -26,7 +26,7 @@
     header{position:sticky;top:0;z-index:50;background:rgba(16,16,16,.94);backdrop-filter:blur(14px);color:#fff;border-bottom:1px solid rgba(255,255,255,.09)}
     .topbar{height:72px;display:flex;align-items:center;justify-content:space-between;gap:20px}
     .brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:-.03em}
-    .brand-mark{width:38px;height:38px;border-radius:12px;background:var(--accent);display:grid;place-items:center;font-size:13px}
+    .brand-mark{width:42px;height:42px;border-radius:12px;background:#fff;display:grid;place-items:center;overflow:hidden;border:1px solid rgba(255,255,255,.16)}.brand-mark img{width:100%;height:100%;object-fit:contain;display:block}
     nav{display:flex;gap:8px}
     nav button{border:0;background:transparent;color:#bfbfbf;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700}
     nav button.active,nav button:hover{background:#272727;color:#fff}
@@ -59,8 +59,8 @@
     .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
     .vehicle{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.045);transition:.22s transform,.22s box-shadow}
     .vehicle:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
-    .photo{aspect-ratio:16/10;background:#e9e9e5;position:relative;overflow:hidden}
-    .photo img{width:100%;height:100%;object-fit:cover;display:block}
+    .photo{aspect-ratio:3/4;background:#ecece8;position:relative;overflow:hidden;display:grid;place-items:center}
+    .photo img{width:100%;height:100%;object-fit:contain;display:block}
     .photo-empty{width:100%;height:100%;display:grid;place-items:center;color:#8a8a84;font-weight:800;background:linear-gradient(135deg,#efefec,#deded8)}
     .badge{position:absolute;top:12px;left:12px;background:rgba(15,15,15,.86);color:#fff;padding:7px 9px;border-radius:999px;font-size:11px;font-weight:900;letter-spacing:.04em}
     .badge.preparando{background:#8a6200}
@@ -68,9 +68,15 @@
     .make{font-size:12px;color:var(--accent);font-weight:900;text-transform:uppercase;letter-spacing:.08em}
     .vehicle h3{font-size:21px;line-height:1.15;margin:6px 0 12px;letter-spacing:-.03em}
     .meta{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 15px}
-    .meta span{background:#f3f3f0;border-radius:999px;padding:7px 9px;font-size:12px;color:#555}
-    .price-label{font-size:12px;color:var(--muted);font-weight:700}
-    .price{font-size:25px;font-weight:900;letter-spacing:-.04em;margin:2px 0}
+    .meta span{background:#f3f3f0;border-radius:999px;padding:7px 9px;font-size:12px;color:#555;display:inline-flex;align-items:center;gap:6px}
+    .meta svg,.spec-title svg{width:15px;height:15px;flex:0 0 auto}
+    .price-stack{display:grid;gap:9px;margin-top:3px}
+    .price-box{border-radius:14px;padding:11px 13px}
+    .price-box.usd{background:#111;color:#fff}
+    .price-box.ars{background:#f4ecec;border:1px solid #e7c9ca;color:#631216}
+    .price-label{font-size:11px;color:inherit;opacity:.72;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+    .price{font-size:24px;font-weight:900;letter-spacing:-.04em;margin:2px 0 0;display:flex;align-items:center;gap:5px}.price svg{width:19px;height:19px}
+    .price-prefix{font-size:12px;font-weight:900;margin-right:4px;opacity:.8}
     .advance{font-size:13px;color:#555;margin-top:4px}
     .card-actions{display:grid;grid-template-columns:1fr auto;gap:9px;margin-top:16px}
     .detail-btn{background:#111;color:#fff;border:0;padding:12px;border-radius:12px;font-weight:800;cursor:pointer}
@@ -92,10 +98,10 @@
     .counter{color:#bbb;font-size:13px;min-width:60px;text-align:center}
     .detail-info{padding:34px}
     .detail-info h3{font-size:34px;line-height:1.04;letter-spacing:-.05em;margin:8px 0 18px}
-    .detail-price{font-size:34px;font-weight:950;letter-spacing:-.05em;margin:6px 0 18px}
+    .detail-price{font-size:30px;font-weight:950;letter-spacing:-.05em;margin:4px 0 0}.detail-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:8px 0 18px}.detail-price-grid .price-box{padding:14px}
     .specs{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:18px 0 24px}
     .spec{border:1px solid var(--line);border-radius:14px;padding:12px}
-    .spec small{color:var(--muted);display:block;margin-bottom:4px}
+    .spec small{color:var(--muted);display:flex;align-items:center;gap:6px;margin-bottom:4px}.detail-price svg{width:22px;height:22px;vertical-align:-4px}
     .spec strong{font-size:14px}
     .whatsapp{width:100%;background:#1fa855;color:#fff;border:0;border-radius:14px;padding:15px;font-weight:900;cursor:pointer}
     footer{background:#111;color:#aaa;padding:30px 0;font-size:13px}
@@ -121,7 +127,7 @@
       .modal{padding:0}.modal-panel{height:100vh;max-height:none;border-radius:0}
       .gallery{min-height:360px}.main-image{min-height:300px}
       .detail-info{padding:24px}
-      .detail-info h3{font-size:29px}
+      .detail-info h3{font-size:29px}.detail-price-grid{grid-template-columns:1fr}
     }
   </style>
 </head>
@@ -129,7 +135,7 @@
 <header>
   <div class="shell topbar">
     <a class="brand" href="#" data-view="home">
-      <div class="brand-mark">LMP</div>
+      <div class="brand-mark"><img src="./apple-touch-icon.png" alt="Logo LMP Automotores"></div>
       <span>LMP Automotores</span>
     </a>
     <nav>
@@ -284,12 +290,15 @@ function card(v){
       <div class="make">${escapeHtml(v.marca)}</div>
       <h3>${escapeHtml(v.modelo)}</h3>
       <div class="meta">
-        ${v.anio?`<span>${escapeHtml(v.anio)}</span>`:''}
-        ${v.kilometraje?`<span>${escapeHtml(km(v.kilometraje))}</span>`:''}
-        ${v.transmision?`<span>${escapeHtml(v.transmision)}</span>`:''}
+        ${v.anio?`<span>${icon('calendar')}${escapeHtml(v.anio)}</span>`:''}
+        ${v.kilometraje?`<span>${icon('odometer')}${escapeHtml(km(v.kilometraje))}</span>`:''}
+        ${v.transmision?`<span>${icon('transmission')}${escapeHtml(v.transmision)}</span>`:''}
+        ${v.combustible?`<span>${icon('fuel')}${escapeHtml(v.combustible)}</span>`:''}
       </div>
-      <div class="price-label">Precio publicado</div>
-      <div class="price">${escapeHtml(money(v.precioPublicado || v.cotizacion))}</div>
+      <div class="price-stack">
+        ${v.precioPublicado?`<div class="price-box usd"><div class="price-label">Valor en dólares</div><div class="price">${icon('dollar')} ${escapeHtml(money(v.precioPublicado))}</div></div>`:''}
+        ${v.cotizacion?`<div class="price-box ars"><div class="price-label">Valor total en pesos</div><div class="price"><span class="price-prefix">ARS</span>${escapeHtml(money(v.cotizacion))}</div></div>`:''}
+      </div>
       ${v.anticipo?`<div class="advance">Anticipo desde <strong>${escapeHtml(v.anticipo)}</strong></div>`:''}
       <div class="card-actions">
         <button class="detail-btn" data-id="${escapeAttr(v.id)}">Ver vehículo</button>
@@ -300,6 +309,17 @@ function card(v){
 }
 function escapeHtml(s){return clean(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
 function escapeAttr(s){return escapeHtml(s)}
+function icon(type){
+  const common='viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+  const icons={
+    fuel:`<svg ${common}><path d="M5 3h9v18H5z"/><path d="M7 7h5"/><path d="M14 8h2l3 3v7a2 2 0 0 0 4 0v-7l-2-2"/><path d="M19 11h4"/></svg>`,
+    transmission:`<svg ${common}><circle cx="6" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/><path d="M6 7v10M18 7v10M6 12h12"/></svg>`,
+    dollar:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5c-.8-.8-2-1.3-3.5-1.3-2 0-3.4 1-3.4 2.5 0 1.7 1.5 2.2 3.4 2.6 1.8.4 3.4.9 3.4 2.7 0 1.6-1.5 2.8-3.7 2.8-1.6 0-3-.5-4-1.5M12 5v14"/></svg>`,
+    calendar:`<svg ${common}><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>`,
+    odometer:`<svg ${common}><path d="M4 17a8 8 0 1 1 16 0"/><path d="m12 13 4-3"/><path d="M7 17h10"/></svg>`
+  };
+  return icons[type]||'';
+}
 function renderCards(target,list){
   target.innerHTML=list.length?list.map(card).join(''):`<div class="empty">No encontramos vehículos con estos filtros.</div>`;
   target.querySelectorAll('.detail-btn').forEach(b=>b.addEventListener('click',()=>openVehicle(b.dataset.id)));
@@ -328,9 +348,9 @@ function openVehicle(id){
   const v=vehicles.find(x=>x.id===id); if(!v)return;
   currentGallery={images:v.fotos,index:0};
   const specs=[
-    ['Año',v.anio],['Kilometraje',v.kilometraje?km(v.kilometraje):''],
-    ['Combustible',v.combustible],['Transmisión',v.transmision],
-    ['Color',v.color],['Financiación máxima',v.maxFinan]
+    ['Año',v.anio,'calendar'],['Kilometraje',v.kilometraje?km(v.kilometraje):'','odometer'],
+    ['Combustible',v.combustible,'fuel'],['Transmisión',v.transmision,'transmission'],
+    ['Color',v.color,'']
   ].filter(x=>x[1]);
   const gallery=v.fotos.length?`
     <div class="gallery">
@@ -341,10 +361,12 @@ function openVehicle(id){
     <div class="detail-info">
       <div class="make">${escapeHtml(v.marca)} · ${escapeHtml(v.id)}</div>
       <h3>${escapeHtml(v.modelo)}</h3>
-      <div class="price-label">Precio publicado</div>
-      <div class="detail-price">${escapeHtml(money(v.precioPublicado || v.cotizacion))}</div>
+      <div class="detail-price-grid">
+        ${v.precioPublicado?`<div class="price-box usd"><div class="price-label">Valor en dólares</div><div class="detail-price">${icon('dollar')} ${escapeHtml(money(v.precioPublicado))}</div></div>`:''}
+        ${v.cotizacion?`<div class="price-box ars"><div class="price-label">Valor total en pesos</div><div class="detail-price"><span class="price-prefix">ARS</span>${escapeHtml(money(v.cotizacion))}</div></div>`:''}
+      </div>
       ${v.anticipo?`<p>Anticipo mínimo: <strong>${escapeHtml(v.anticipo)}</strong></p>`:''}
-      <div class="specs">${specs.map(s=>`<div class="spec"><small>${escapeHtml(s[0])}</small><strong>${escapeHtml(s[1])}</strong></div>`).join('')}</div>
+      <div class="specs">${specs.map(s=>`<div class="spec"><small class="spec-title">${s[2]?icon(s[2]):''}${escapeHtml(s[0])}</small><strong>${escapeHtml(s[1])}</strong></div>`).join('')}</div>
       <button class="whatsapp" id="whatsappBtn">Consultar por WhatsApp</button>
       ${v.carpeta?`<p style="margin-top:14px"><a href="${escapeAttr(v.carpeta)}" target="_blank" rel="noopener" style="font-weight:800;color:var(--accent)">Ver carpeta de fotos</a></p>`:''}
     </div></div>`;
